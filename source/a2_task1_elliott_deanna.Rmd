@@ -31,10 +31,9 @@ palmetto <- read_csv(here("data", "palmetto.csv")) %>%
   mutate(species = case_when(
     species == "1" ~ "Serenoa repens",
     species == "2" ~ "Sabal etonia")) %>% 
+  mutate(species = as.factor(species)) %>% 
   drop_na()
 ```
-
-
 
 ```{r}
 # pairs plot with GGally to see overall trends
@@ -70,20 +69,9 @@ ggplot(data = palmetto,
 ```
 Canopy height and width are not clearly differentiated between species, so they may  not add significant value to a prediction model based on BLR.
 
-```{r}
-
-ggplot(data = palmetto,
-       aes(x = length, y = height)) +
-  geom_point(aes(color = species)) +
-  scale_color_manual(values = c("darkred", "royalblue")) +
-  labs(x = "Canopy Length (cm)",
-       y = "Canopy Height (cm",
-       color = "Species")
-```
-
 ### Binary Logistic Regression
 
-Probability of a plant being either Serenoa repens or Sabal etonia (BLR)
+Probability of a plant being either *Serenoa repens* or *Sabal etonia*
 
 #### Formula and BLR Model 1
 ```{r}
@@ -101,10 +89,10 @@ Results
 
 summary(palm_blr1)  ## Sabal etonia is reference lvl
 
-blr1_tidy <- broom::tidy(palm__blr1)
+blr1_tidy <- broom::tidy(palm_blr1)
 
 blr1_fitted <- palm_blr1 %>% 
-  broom::augment(type.predict = 'response')
+  broom::augment(type.predict = 'response')  # AIC = 5582
 ```
 
 Plot probability
@@ -116,40 +104,92 @@ ggplot(data = blr1_fitted,
   geom_point(aes(color = species)) +
   geom_smooth(aes(color = species), se = FALSE) +
   labs(x = "Number of Green Leaves", 
-       y = "Probability of outcome '?'")
+       y = "Probability of outcome 'Sabal etonia'")
 ```
 
-Visualize model outcomes using 'jtools::effect_plot()' function
+Visualize model outcomes with 'jtools::effect_plot()' 
 
 ```{r}
 
 effect_plot(palm_blr1,
             pred = green_lvs,
             interval = TRUE,
-            y.lab = "probablility of ?")
+            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
+                                                      # at 0 and 1
 
 effect_plot(palm_blr1,
             pred = length,
             interval = TRUE,
-            y.lab = "probablility of ?")
+            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
+                                                      # at 0 and 1
 
 effect_plot(palm_blr1,
             pred = height,
             interval = TRUE,
-            y.lab = "probability of ?")
+            y.lab = "probability of 'Sabal etonia'") # not clearly delineated
+                                                      # at 0 and 1
 ```
 
 #### Formula and BLR Model 2 
 
 ```{r}
+f2 <- species ~ green_lvs + length
 
+palm_blr2 <- glm(formula = f2,
+                    data = palmetto,
+                    family = 'binomial')
+
+summary(palm_blr2)  # AIC = 5676
 ```
-
-#### Compare with AIC and  cross-validation
 
 ```{r}
 
+effect_plot(palm_blr2,
+            pred = green_lvs,
+            interval = TRUE,
+            y.label = "probability of 'Chinstrap'")
+
+effect_plot(palm_blr2,
+            pred = length,
+            interval = TRUE,
+            y.label = "probability of 'Chinstrap'")
 ```
+
+#### Compare with AIC and k-fold cross-validation
+
+Corrected AIC
+```{r}
+
+aictab(list(palm_blr1, palm_blr2))
+
+# Mod 1 AIC = 5581
+# Mod 2 AIC = 5676
+# delta AIC = 94 (!!!)
+```
+
+10-fold Cross-Validation
+
+```{r}
+
+set.seed(123)
+
+tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
+
+## train the model
+model1 <- train(f1, data = palmetto,
+                method = 'glm', family = 'binomial',
+                trControl = tr_ctrl)
+
+model1  # 90.87% accurate
+
+model2 <- train(f2, data = palmetto,
+                method = 'glm', family = 'binomial',
+                trControl = tr_ctrl)
+
+model2  # 90.67% accurate
+```
+
+Cross-validation shows that both of our models are close to 91% accurate, and corrected AIC shows that our three-variable model is very significantly better than our two-variable model (delta AICc = 94). Therefore, we will utilize our three-variable model.
 
 Use selected model
 
