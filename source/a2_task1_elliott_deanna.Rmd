@@ -26,43 +26,126 @@ WORDS
 Read In Data
 
 ```{r}
-palmetto <- read_csv(here("data", "palmetto.csv"))
+palmetto <- read_csv(here("data", "palmetto.csv")) %>% 
+  select(species, height:green_lvs) %>% 
+  mutate(species = case_when(
+    species == "1" ~ "Serenoa repens",
+    species == "2" ~ "Sabal etonia")) %>% 
+  drop_na()
 ```
 
-Subset? with only given variables
+
+
+```{r}
+# pairs plot with GGally to see overall trends
+
+pairplot <- palmetto %>% 
+  ggpairs(aes(color = species)) # canopy length and green leaves seem most                                       differentiated by species
+```
+
+#### Green Leaves vs Canopy Length by Species
 
 ```{r}
 
+ggplot(data = palmetto,
+       aes(x = length, y = green_lvs)) +
+  geom_point(aes(color = species)) +
+  scale_color_manual(values = c("darkred", "royalblue")) +
+  labs(x = "Canopy Length (cm)",
+       y = "Number of Green Leaves",
+       color = "Species")
 ```
+Though there is some overlap in the center area of the points, there is a clear trend of *Serenoa repens* having more green leaves than *Sabal etonia*. Length is not as clearly differentiated, but there is a slight trend of the length of *Serenoa repens* being shorter than that of *Sabal etonia*. These two variables could be helpful in a BLR.
 
-Pairs plot with GGally
+#### Canopy Height vs Canopy Width by Species
+
+```{r}
+ggplot(data = palmetto,
+       aes(x = width, y = height)) +
+  geom_point(aes(color = species)) +
+  scale_color_manual(values = c("darkred", "royalblue")) +
+  labs(x = "Canopy Width (cm)",
+       y = "Canopy Height (cm",
+       color = "Species")
+```
+Canopy height and width are not clearly differentiated between species, so they may  not add significant value to a prediction model based on BLR.
 
 ```{r}
 
+ggplot(data = palmetto,
+       aes(x = length, y = height)) +
+  geom_point(aes(color = species)) +
+  scale_color_manual(values = c("darkred", "royalblue")) +
+  labs(x = "Canopy Length (cm)",
+       y = "Canopy Height (cm",
+       color = "Species")
 ```
-
-Other plot
-
-```{r}
-
-```
-
-Third plot?
-
-```{r}
-
-```
-
 
 ### Binary Logistic Regression
 
 Probability of a plant being either Serenoa repens or Sabal etonia (BLR)
 
+#### Formula and BLR Model 1
+```{r}
+
+f1 <- species ~ green_lvs + length + height
+
+palm_blr1 <- glm(formula = f1,
+                 data = palmetto,
+                 family = 'binomial')
+```
+
+Results
+
+```{r}
+
+summary(palm_blr1)  ## Sabal etonia is reference lvl
+
+blr1_tidy <- broom::tidy(palm__blr1)
+
+blr1_fitted <- palm_blr1 %>% 
+  broom::augment(type.predict = 'response')
+```
+
+Plot probability
+
+```{r}
+
+ggplot(data = blr1_fitted,
+       aes(x = green_lvs, y = .fitted)) +
+  geom_point(aes(color = species)) +
+  geom_smooth(aes(color = species), se = FALSE) +
+  labs(x = "Number of Green Leaves", 
+       y = "Probability of outcome '?'")
+```
+
+Visualize model outcomes using 'jtools::effect_plot()' function
+
+```{r}
+
+effect_plot(palm_blr1,
+            pred = green_lvs,
+            interval = TRUE,
+            y.lab = "probablility of ?")
+
+effect_plot(palm_blr1,
+            pred = length,
+            interval = TRUE,
+            y.lab = "probablility of ?")
+
+effect_plot(palm_blr1,
+            pred = height,
+            interval = TRUE,
+            y.lab = "probability of ?")
+```
+
+#### Formula and BLR Model 2 
+
 ```{r}
 
 ```
 
-Compare with AIC and  cross-validation
+#### Compare with AIC and  cross-validation
 
 ```{r}
 
