@@ -87,7 +87,7 @@ Results
 
 ```{r}
 
-summary(palm_blr1)  ## Sabal etonia is reference lvl
+summary(palm_blr1)  ## Serenoa repens is reference lvl
 
 blr1_tidy <- broom::tidy(palm_blr1)
 
@@ -104,7 +104,7 @@ ggplot(data = blr1_fitted,
   geom_point(aes(color = species)) +
   geom_smooth(aes(color = species), se = FALSE) +
   labs(x = "Number of Green Leaves", 
-       y = "Probability of outcome 'Sabal etonia'")
+       y = "Probability of outcome 'Serenoa repens'")
 ```
 
 Visualize model outcomes with 'jtools::effect_plot()' 
@@ -114,20 +114,19 @@ Visualize model outcomes with 'jtools::effect_plot()'
 effect_plot(palm_blr1,
             pred = green_lvs,
             interval = TRUE,
-            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
+            y.lab = "probablility of 'Serenoa repens'") # clearly delineated
                                                       # at 0 and 1
 
 effect_plot(palm_blr1,
             pred = length,
             interval = TRUE,
-            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
+            y.lab = "probablility of 'Serenoa repens'") # clearly delineated
                                                       # at 0 and 1
 
 effect_plot(palm_blr1,
             pred = height,
             interval = TRUE,
-            y.lab = "probability of 'Sabal etonia'") # not clearly delineated
-                                                      # at 0 and 1
+            y.lab = "probability of 'Serenoa repens'") # not clearly                                                                  delineated at 0 and 1
 ```
 
 #### Formula and BLR Model 2 
@@ -140,6 +139,12 @@ palm_blr2 <- glm(formula = f2,
                     family = 'binomial')
 
 summary(palm_blr2)  # AIC = 5676
+
+
+blr2_tidy <- broom::tidy(palm_blr2)
+
+blr2_fitted <- palm_blr2 %>% 
+  broom::augment(type.predict = 'response') 
 ```
 
 ```{r}
@@ -147,12 +152,12 @@ summary(palm_blr2)  # AIC = 5676
 effect_plot(palm_blr2,
             pred = green_lvs,
             interval = TRUE,
-            y.label = "probability of 'Chinstrap'")
+            y.label = "probability of 'Serenoa repens'")
 
 effect_plot(palm_blr2,
             pred = length,
             interval = TRUE,
-            y.label = "probability of 'Chinstrap'")
+            y.label = "probability of 'Serenoa repens'")
 ```
 
 #### Compare with AIC and k-fold cross-validation
