@@ -217,27 +217,25 @@ Cross-validation shows that our four-variable model is close to 92% accurate, wh
 
 ```{r}
 
-# create columns for prediction and accuracy of each model
+# create columns for prediction and accuracy for selected model
 
 accurate_4var <- blr_4var_fitted %>% 
   mutate(prediction = case_when(
     .fitted >= 0.5 ~ "Serenoa repens",
     .fitted < 0.5 ~ "Sabal etonia")) %>% 
   mutate(accurate = case_when(
-    prediction == species ~ "Yes",
+    prediction == species ~ "Yes")) %>% 
+  mutate(inaccurate = case_when(
     prediction != species ~ "No")) %>% 
-  select(species, .fitted, prediction, accurate)
+  select(species, .fitted, prediction, accurate, inaccurate)
 
-accurate_3var <- blr_3var_fitted %>% 
-  mutate(prediction = case_when(
-    .fitted >= 0.5 ~ "Serenoa repens",
-    .fitted < 0.5 ~ "Sabal etonia")) %>% 
-  mutate(accurate = case_when(
-    prediction == species ~ "Yes",
-    prediction != species ~ "No")) %>% 
-  select(species, .fitted, prediction, accurate)
-  
-# Model table
+
+
+accurate_4var %>% 
+  group_by(species, accurate, inaccurate) %>% 
+  summarize(n()) %>% 
+  mutate(% correct = )
+  kable()
 
 
 ```
