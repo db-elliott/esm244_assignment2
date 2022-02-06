@@ -1,0 +1,34 @@
+---
+title: "Task 2 - Parameter Estimation (Lizards)"
+author: "Deanna Elliott"
+date: "2/5/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+```
+
+### Overview
+
+This report utilizes nonlinear least squares regression to estimate parameters of a snout length to weight model for lizard populations at Jornada Basin LTER in New Mexico.
+
+### Data Wrangling
+
+```{r}
+liz <- read_csv(here("data", "lizards.csv"))
+```
+
+
+### Fitted Model Plot
+
+
+### Male Western Whiptails
+
+
+### Data Citation
+
+Lightfoot, D. and W.G. Whitford. 2020. Lizard pitfall trap data from 11 NPP study locations at the Jornada Basin LTER site, 1989-2006 ver 37. Environmental Data Initiative. https://doi.org/10.6073/pasta/4a6e258fb49c31e222ecbbcfd128967f
