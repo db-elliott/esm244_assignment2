@@ -19,6 +19,7 @@ library(caret)
 library(AICcmodavg)
 library(modelsummary)
 library(kableExtra)
+library(janitor)
 ```
 
 ### Overview
@@ -101,9 +102,9 @@ blr_4var_fitted <- blr_4var %>%
   broom::augment(type.predict = 'response')  # AIC = 5195
 ```
 
-Plot probability
+```{r, include = FALSE}
 
-```{r}
+# plot probability
 
 ggplot(data = blr_4var_fitted,
        aes(x = green_lvs, y = .fitted)) +
@@ -113,9 +114,9 @@ ggplot(data = blr_4var_fitted,
        y = "Probability of outcome 'Sabal etonia'")
 ```
 
-Visualize model outcomes with 'jtools::effect_plot()' 
+```{r, include=FALSE}
 
-```{r}
+#effect plots
 
 effect_plot(blr_4var,
             pred = green_lvs,
@@ -157,9 +158,7 @@ blr_3var_fitted <- blr_3var %>%
   broom::augment(type.predict = 'response') 
 ```
 
-Effect Plots
-
-```{r}
+```{r, include=FALSE}
 
 effect_plot(blr_3var,
             pred = green_lvs,
@@ -224,22 +223,22 @@ accurate_4var <- blr_4var_fitted %>%
     .fitted >= 0.5 ~ "Serenoa repens",
     .fitted < 0.5 ~ "Sabal etonia")) %>% 
   mutate(accurate = case_when(
-    prediction == species ~ "Yes")) %>% 
-  mutate(inaccurate = case_when(
+    prediction == species ~ "Yes",
     prediction != species ~ "No")) %>% 
-  select(species, .fitted, prediction, accurate, inaccurate)
+  select(species, .fitted, prediction, accurate)
 
+acc_table <- accurate_4var %>% 
+  tabyl(species, accurate)
 
-
-accurate_4var %>% 
-  group_by(species, accurate, inaccurate) %>% 
-  summarize(n()) %>% 
-  mutate(% correct = )
-  kable()
-
+acc_table %>% 
+  mutate(perc_correct <- round(((Yes/(Yes+No))*100), 2)) %>% 
+  kbl(col.names = c("Species", "Inaccurate", "Accurate", "% Correct"), 
+      caption = "<b> Table 1. Palmetto species prediction from binomial logistic regression. </b> Counts and proportions palmetto species correctly and incorrectly classified utilizing a binomial logistic regression including number of green leaves and canopy height, length, and width of each species.") %>% kable_classic() %>% 
+    column_spec(1, italic = T)
 
 ```
 
+Our 4-variable model proves to be over 90% accurate at classifying both palmetto species from physical attributes of the plants.
 
 ### Data Citation
 Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
