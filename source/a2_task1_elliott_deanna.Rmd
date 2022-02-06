@@ -82,9 +82,9 @@ Probability of a plant being either *Serenoa repens* or *Sabal etonia*
 #### Formula and BLR Model 1
 ```{r}
 
-f1 <- species ~ green_lvs + length + height
+f1 <- species ~ green_lvs + length + width + height
 
-palm_blr_3var <- glm(formula = f1,
+blr_4var <- glm(formula = f1,
                  data = palmetto,
                  family = 'binomial')
 ```
@@ -93,63 +93,67 @@ Results
 
 ```{r}
 
-summary(palm_blr_3var)  ## Serenoa repens is reference lvl
+summary(blr_4var)  ## Sabal etonia is reference lvl
 
-blr_3var_tidy <- broom::tidy(palm_blr_3var)
+blr_4var_tidy <- broom::tidy(blr_4var)
 
-blr_3var_fitted <- palm_blr_3var %>% 
-  broom::augment(type.predict = 'response')  # AIC = 5582
+blr_4var_fitted <- blr_4var %>% 
+  broom::augment(type.predict = 'response')  # AIC = 5195
 ```
 
 Plot probability
 
 ```{r}
 
-ggplot(data = blr_3var_fitted,
+ggplot(data = blr_4var_fitted,
        aes(x = green_lvs, y = .fitted)) +
   geom_point(aes(color = species)) +
   geom_smooth(aes(color = species), se = FALSE) +
   labs(x = "Number of Green Leaves", 
-       y = "Probability of outcome 'Serenoa repens'")
+       y = "Probability of outcome 'Sabal etonia'")
 ```
 
 Visualize model outcomes with 'jtools::effect_plot()' 
 
 ```{r}
 
-effect_plot(palm_blr_3var,
+effect_plot(blr_4var,
             pred = green_lvs,
             interval = TRUE,
-            y.lab = "probablility of 'Serenoa repens'") # clearly delineated
+            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
                                                       # at 0 and 1
 
-effect_plot(palm_blr_3var,
+effect_plot(blr_4var,
             pred = length,
             interval = TRUE,
-            y.lab = "probablility of 'Serenoa repens'") # clearly delineated
+            y.lab = "probablility of 'Sabal etonia'") # clearly delineated
                                                       # at 0 and 1
+effect_plot(blr_4var,
+            pred = width,
+            interval = TRUE,
+            y.lab = "probability of 'Sabal etonia'") # clear at 0, less so 1
 
-effect_plot(palm_blr_3var,
+effect_plot(blr_4var,
             pred = height,
             interval = TRUE,
-            y.lab = "probability of 'Serenoa repens'") # not clearly                                                                  delineated at 0 and 1
+            y.lab = "probability of 'Sabal etonia'") # not very clear
 ```
 
 #### Formula and BLR Model 2 
 
 ```{r}
-f2 <- species ~ green_lvs + length
+f2 <- species ~ green_lvs + height +width
 
-palm_blr_2var <- glm(formula = f2,
+blr_3var <- glm(formula = f2,
                     data = palmetto,
                     family = 'binomial')
 
-summary(palm_blr_2var)  # AIC = 5676
+summary(blr_3var)  # AIC = 5988
 
 
-blr_2var_tidy <- broom::tidy(palm_blr_2var)
+blr_3var_tidy <- broom::tidy(blr_3var)
 
-blr_2var_fitted <- palm_blr_2var %>% 
+blr_3var_fitted <- blr_3var %>% 
   broom::augment(type.predict = 'response') 
 ```
 
@@ -157,15 +161,20 @@ Effect Plots
 
 ```{r}
 
-effect_plot(palm_blr_2var,
+effect_plot(blr_3var,
             pred = green_lvs,
             interval = TRUE,
-            y.label = "probability of 'Serenoa repens'")
+            y.label = "probability of 'Sabal etonia'") #clear at 0 and 1
 
-effect_plot(palm_blr_2var,
-            pred = length,
+effect_plot(blr_3var,
+            pred = height,
             interval = TRUE,
-            y.label = "probability of 'Serenoa repens'")
+            y.label = "probability of 'Sabal etonia'") #not clear at all
+
+effect_plot(blr_3var,
+            pred = width,
+            interval = TRUE,
+            y.lab = "Probability of 'Sabal etonia'") #clear at 0 and 1
 ```
 
 #### Compare with AIC and k-fold cross-validation
@@ -173,11 +182,11 @@ effect_plot(palm_blr_2var,
 Corrected AIC
 ```{r}
 
-aictab(list(palm_blr_3var, palm_blr_2var))
+aictab(list(blr_4var, blr_3var))
 
-# Mod 1 AIC = 5581
-# Mod 2 AIC = 5676
-# delta AIC = 94 (!!!)
+# Mod 1 AIC = 5195
+# Mod 2 AIC = 5988
+# delta AIC = 793 (!!!)
 ```
 
 10-fold Cross-Validation
@@ -189,30 +198,50 @@ set.seed(123)
 tr_ctrl <- trainControl(method = 'repeatedcv', number = 10, repeats = 10)
 
 ## train the model
-mod_3var <- train(f1, data = palmetto,
+mod_4var <- train(f1, data = palmetto,
                 method = 'glm', family = 'binomial',
                 trControl = tr_ctrl)
 
-mod_3var  # 90.87% accurate
+mod_4var  # 91.69% accurate
 
 mod_2var <- train(f2, data = palmetto,
                 method = 'glm', family = 'binomial',
                 trControl = tr_ctrl)
 
-mod_2var  # 90.67% accurate
+mod_2var  # 89.90% accurate
 ```
 
-### Model Comparison
+Cross-validation shows that our four-variable model is close to 92% accurate, while the model excluding canopy length is about 90% accurate. Additionally, corrected AIC shows that our four-variable model is significantly better than our three-variable model (delta AICc = 793). Therefore, we will utilize our four-variable model.
+
+### Model Evaluation
 
 ```{r}
 
-modelsummary(list(palm_blr_3var, palm_blr_2var), fmt = 2) %>% 
-  kable_classic()
+# create columns for prediction and accuracy of each model
+
+accurate_4var <- blr_4var_fitted %>% 
+  mutate(prediction = case_when(
+    .fitted >= 0.5 ~ "Serenoa repens",
+    .fitted < 0.5 ~ "Sabal etonia")) %>% 
+  mutate(accurate = case_when(
+    prediction == species ~ "Yes",
+    prediction != species ~ "No")) %>% 
+  select(species, .fitted, prediction, accurate)
+
+accurate_3var <- blr_3var_fitted %>% 
+  mutate(prediction = case_when(
+    .fitted >= 0.5 ~ "Serenoa repens",
+    .fitted < 0.5 ~ "Sabal etonia")) %>% 
+  mutate(accurate = case_when(
+    prediction == species ~ "Yes",
+    prediction != species ~ "No")) %>% 
+  select(species, .fitted, prediction, accurate)
+  
+# Model table
+
+
 ```
 
-.
-
-Cross-validation shows that both of our models are close to 91% accurate, and corrected AIC shows that our three-variable model is significantly better than our two-variable model (delta AICc = 94). Therefore, we will utilize our three-variable model.
 
 ### Data Citation
 Abrahamson, W.G. 2019. Survival, growth and biomass estimates of two dominant palmetto species of south-central Florida from 1981 - 2017, ongoing at 5-year intervals ver 1. Environmental Data Initiative. https://doi.org/10.6073/pasta/f2f96ec76fbbd4b9db431c79a770c4d5
