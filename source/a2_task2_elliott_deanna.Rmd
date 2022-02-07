@@ -5,19 +5,18 @@ date: "2/5/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(here)
 library(Metrics)
-library(cowplot)
-library(purrr)
+library(kableExtra)
 ```
 
 ### Overview
 
-This report utilizes nonlinear least squares regression to estimate parameters of a snout length to weight model for lizard populations at Jornada Basin LTER in New Mexico.
+This report utilizes nonlinear least squares regression to estimate parameters of a snout length to weight model for lizard populations at Jornada Basin LTER in New Mexico from 19.
 
 ### Data Wrangling
 
@@ -44,9 +43,9 @@ $$
 
 ```{r}
 
-liz_func <- function(a, SVL, b){
-  weight_out = a*(SVL^b)
-  return(out)
+liz_func <- function(a, SV_length, b){
+  weight = a*(SV_length^b)
+  return(weight)
   }
 ```
 
@@ -72,21 +71,46 @@ b_est <- lin_mod$coefficients[2]
 
 ```{r}
 
-all_liz <- function(liz_df){
-  nls(lizards ~ liz_func(a, SVL, b),
-      data = liz_df,
-      start = list(m = max(surplus_df$TBbest)*0.37, 
-                   carry = max(surplus_df$TBbest)))
-}
+liz_nls <- nls(weight ~ liz_func(a, SV_length, b),
+      data = lizards,
+      start = list(a = a_est, b = b_est))
 
-liz_rmse <- lizards %>% 
-  group_by(spp) %>% 
-  nest() %>% 
-  mutate(nls_model = map(data, ~ all_liz(.x))) %>% 
-  mutate(predictions = map2(nls_model, data, ~predict(.x, newdata = .y))) %>% 
-  mutate(RMSE = map2_dbl(predictions, data, ~rmse(.x, .y$surplus)))
+summary(liz_nls) #rmse = 2.792
+
 ```
 
+```{r}
+
+# add predictions column to lizards dataset
+
+liz_pred <- lizards %>% 
+  mutate(predictions = predict(liz_nls, lizards, interval = "prediction"))
+```
+
+```{r}
+
+# plot actual weights vs predicted (by sex)
+
+ggplot(data = liz_pred) +
+  geom_point(aes(x = SV_length, y = weight), color = "lightgrey") +
+  geom_point(aes(x = SV_length, y = predictions, color = sex)) +
+  scale_color_manual(values = c("coral", "royalblue")) +
+  theme_classic() +
+  labs(x = "Snout-Vent Length (mm)", y = "Body Weight (g)", color = "Sex")
+```
+
+**Figure 1. Actual vs predicted weight of lizards.** 
+
+
+```{r}
+
+broom::tidy(liz_nls) %>% 
+    mutate(
+    p.value = scales::pvalue(p.value)) %>% 
+  kable(col.names = c("Coefficient", "Estimate", "Standard Error", "Statistic", "P Value"), digits = c(0, 5, 6, 2, 3)) %>% 
+  kable_classic() %>% 
+  kable_styling(full_width = FALSE, position = "center")
+```
 
 ### Male Western Whiptails
 
@@ -94,8 +118,49 @@ liz_rmse <- lizards %>%
 
 mww <- lizards %>% 
   filter(spp == "CNTI",
+         sex == "M") %>% 
+  drop_na()
+
+# linear regression on log columns to find parameter estimates
+
+lin_mod_mww <- lm(log(weight) ~ log_length, data = mww)
+
+a_est_mww <- exp(lin_mod$coefficients[1])
+b_est_mww <- lin_mod$coefficients[2]
+```
+
+```{r}
+
+mww_nls <- nls(weight ~ liz_func(a, SV_length, b),
+      data = mww,
+      start = list(a = a_est_mww, b = b_est_mww))
+
+mww_spp_pred <- mww %>% 
+  mutate(predictions = predict(mww_nls, mww, interval = "prediction"))
+
+mww_pred <- liz_pred %>% 
+  filter(spp == "CNTI",
          sex == "M")
 ```
+
+```{r}
+
+ggplot() +
+  geom_point(data = mww, aes(x = SV_length, y = weight), color = "gray") +
+  geom_point(data = mww_pred, aes(x = SV_length, y = predictions, 
+                                     color = "General")) +
+  geom_point(data = mww_spp_pred, aes(x = SV_length, y = predictions, 
+                                 color = "Species-Specific")) +
+  scale_color_manual(name = "NLS Model", breaks = c("General", 
+                                                    "Species-Specific"),
+                                           values = c("General" = "black", 
+                                                      "Species-Specific" = 
+                                                        "blue")) +
+  labs(x = "Snout-Vent Length (mm)",
+       y = "Body Weight (g)") +
+  theme_minimal()
+```
+
 
 ### Data Citation
 
