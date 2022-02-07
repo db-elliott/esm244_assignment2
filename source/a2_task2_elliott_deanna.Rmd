@@ -16,7 +16,7 @@ library(kableExtra)
 
 ### Overview
 
-This report utilizes nonlinear least squares regression to estimate parameters of a snout length to weight model for lizard populations at Jornada Basin LTER in New Mexico from 19.
+This report utilizes nonlinear least squares regression to estimate parameters of a snout length to weight model for lizard populations at Jornada Basin LTER in New Mexico from 1989 to 2006. A general model was created to analyze predictions of body weight from snout-vent length of many lizard species. Then, a species-specific model was created for the same predictions on a subset of only male Western Whiptail lizards (*Cnemidophorus tigrisatus*). The two models were compared based on their RMSEs. 
 
 ### Data Wrangling
 
@@ -99,7 +99,7 @@ ggplot(data = liz_pred) +
   labs(x = "Snout-Vent Length (mm)", y = "Body Weight (g)", color = "Sex")
 ```
 
-**Figure 1. Actual vs predicted weight of lizards.** 
+**Figure 1. Snout-vent length vs body weight of lizards.** Snout-vent lengths for multiple species are plotted  against both actual actual observed body weights and the predicted body weights from the nonlinear least squares model.The model is color-coded by sex. The spread of actual weights is fairly close to the model at smaller snout-vent lengths, and gets wider at larger lengths.
 
 
 ```{r}
@@ -107,7 +107,7 @@ ggplot(data = liz_pred) +
 broom::tidy(liz_nls) %>% 
     mutate(
     p.value = scales::pvalue(p.value)) %>% 
-  kable(col.names = c("Coefficient", "Estimate", "Standard Error", "Statistic", "P Value"), digits = c(0, 5, 6, 2, 3)) %>% 
+  kable(col.names = c("Coefficient", "Estimate", "Standard Error", "Statistic", "P Value"), digits = c(0, 5, 6, 2, 3), caption = "<b>Table 1. Nonlinear least squares model estimates.</b> The estimates of our parameter coefficients, their standard, statistics, and p-value are reported for the gener llizard species model.") %>% 
   kable_classic() %>% 
   kable_styling(full_width = FALSE, position = "center")
 ```
@@ -135,6 +135,8 @@ mww_nls <- nls(weight ~ liz_func(a, SV_length, b),
       data = mww,
       start = list(a = a_est_mww, b = b_est_mww))
 
+summary(mww_nls) #rmse = 3.40
+
 mww_spp_pred <- mww %>% 
   mutate(predictions = predict(mww_nls, mww, interval = "prediction"))
 
@@ -161,6 +163,11 @@ ggplot() +
   theme_minimal()
 ```
 
+**Figure 2.** General vs species-specific nonlinear least squares model.** Snout-vent lengths are plotted against both actual actual observed body weights for male Western Whiptails (*C. tigrisatus*) and the predicted body weights from both the model trained on multiple lizard species and the model trained on only male Western Whiptails. 
+
+### Takeaway
+
+The two models are fairly similar, with the general model having an RMSE value of 2.80 and the species-specific model having an RMSE of 3.40. This tells us that the species-specific model is better at predicting the body weight of male Western Whiptail lizards from their snout-vent lengths.
 
 ### Data Citation
 
