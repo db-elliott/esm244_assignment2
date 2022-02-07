@@ -10,6 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(here)
+library(Metrics)
+library(cowplot)
+library(purrr)
 ```
 
 ### Overview
@@ -19,15 +22,80 @@ This report utilizes nonlinear least squares regression to estimate parameters o
 ### Data Wrangling
 
 ```{r}
-liz <- read_csv(here("data", "lizards.csv"))
+
+liz <- read_csv(here("data", "lizard.csv")) %>% 
+  select(spp:weight) %>% 
+  drop_na()
 ```
 
-
 ### Fitted Model Plot
+
+Create function
+
+$$
+W = a*(SVL)^b
+$$
+
+Linearize function
+
+$$
+ln(W) = b*ln(a) + b*ln(SVL)
+$$
+
+```{r}
+
+liz_func <- function(a, SVL, b){
+  weight_out = a*(SVL^b)
+  return(out)
+  }
+```
+
+```{r}
+
+# add log(length) and log(weight) to dataset
+
+lizards <- liz %>% 
+  mutate(log_length = log(SV_length),
+         log_weight = log(weight))
+```
+
+```{r}
+
+# linear regression on log columns to find parameter estimates
+
+lin_mod <- lm(log(weight) ~ log_length, data = lizards)
+
+a_est <- exp(lin_mod$coefficients[1])
+b_est <- lin_mod$coefficients[2]
+
+```
+
+```{r}
+
+all_liz <- function(liz_df){
+  nls(lizards ~ liz_func(a, SVL, b),
+      data = liz_df,
+      start = list(m = max(surplus_df$TBbest)*0.37, 
+                   carry = max(surplus_df$TBbest)))
+}
+
+liz_rmse <- lizards %>% 
+  group_by(spp) %>% 
+  nest() %>% 
+  mutate(nls_model = map(data, ~ all_liz(.x))) %>% 
+  mutate(predictions = map2(nls_model, data, ~predict(.x, newdata = .y))) %>% 
+  mutate(RMSE = map2_dbl(predictions, data, ~rmse(.x, .y$surplus)))
+```
 
 
 ### Male Western Whiptails
 
+```{r}
+
+mww <- lizards %>% 
+  filter(spp == "CNTI",
+         sex == "M")
+```
 
 ### Data Citation
 
