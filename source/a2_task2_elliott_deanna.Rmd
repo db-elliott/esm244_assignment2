@@ -163,7 +163,7 @@ ggplot() +
   theme_minimal()
 ```
 
-**Figure 2.** General vs species-specific nonlinear least squares model.** Snout-vent lengths are plotted against both actual actual observed body weights for male Western Whiptails (*C. tigrisatus*) and the predicted body weights from both the model trained on multiple lizard species and the model trained on only male Western Whiptails. 
+**Figure 2. General vs species-specific nonlinear least squares model.** Snout-vent lengths are plotted against both actual actual observed body weights for male Western Whiptails (*C. tigrisatus*) and the predicted body weights from both the model trained on multiple lizard species and the model trained on only male Western Whiptails. 
 
 ### Takeaway
 
